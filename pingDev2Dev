@@ -1,0 +1,22 @@
+#!/bin/bash
+declare -a arr=("intel07" "intel10" "intel14" "gfx10" "intel14-phi" "intel14-k20")
+source=$(hostname)
+for i in "${arr[@]}"
+do
+	if [ "$source.i" != "dev-$i" ]; then		#makes sure dev node doesn't ping itself
+		ping dev-${i} -c 20 > ${source}with${i}.txt	#ping data goes into .txt data file
+		echo DATE AND TIME >> ${source}with${i}.txt	
+		date >> ${source}with${i}.txt			#puts date into .txt data file
+		echo PINGER LOAD AVERAGE >> ${source}with${i}.txt	
+		uptime >> ${source}with${i}.txt			#puts usage info of pinging node into .txt data file
+		echo PINGEE LOAD AVERAGE >> ${source}with${i}.txt
+		ssh -t dev-${i} uptime >> ${source}with${i}.txt		#puts usage info of pinged to node into .txt data file
+	fi
+done
+for a in "${arr[@]}"
+do
+	if [ "$source" != "dev-$a" ]; then
+		python betterParsingDev2Dev.py ${source}with${a}.txt Dev2Devdotitests.csv ${source}with${a}
+			#grabs all data from .txt files and puts it all into one .csv file
+	fi
+done

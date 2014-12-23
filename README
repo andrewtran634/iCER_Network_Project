@@ -1,0 +1,167 @@
+NOTE: findBadNodescmd.py IS THE PROGRAM THAT YOU USE AT THE VERY END.  TO DECIDE BAD NODES, IT ESTABLISHES AN AVERAGE PING TIME THRESHOLD
+	IF ANY RECORDED NODES PASS THIS THRESHOLD, IT IS MARKED AS BAD, UNLESS IT HAS AN EXCEPTIONALLY HIGH LOAD AVERAGE
+	THE PROGRAM DECIDES IF THE LOAD AVERAGE IS TOO HIGH BY CHECKING IF THE NUMBER OF CORES REQUESTED FROM UPTIME IS MORE THAN HALF THE
+	NUMBER OF CORES ON THE NODE (it checks for both the node pinging and the node that is getting pinged to. IF THIS IS TRUE, THE NODE 
+	WILL BE MARKED AS UNVIABLE AND WON'T BE RECORDED AS A BAD NODE  
+
+
+
+---BASIC STEPS Compute node pinging to Dev-node (THIS IS JUST AN EXAMPLE WITH THE INTEL14 CLUSTER)---
+1)	run the pingCnode2Devintel14.qsub script
+2)	wait for a little bit, it will probably take an hour
+3)	run this command --> python iterateYacron.py "csstests.csv" "css csn csp csm" 
+4)	run this command --> histogram.py csstests.csv
+5)	using the histogram, analyze the data
+6)	build a list of bad nodes on the intel14 cluster by running this command --> python findBadNodescmd.py "csstests.csv" "cssBadNodes.txt" "6"
+											*this process is a little weird,  the last input into findBadNodescmd.py
+											will be the number of standard deviations away from the average you choose.
+											this establishes a cutoff point for which nodes are bad.
+											IF YOU DON'T WANT TO ENTER A NUMBER THOUGH, THE PROGRAM WILL DEFAULT
+											TO 3 STANDARD DEVIATIONS
+
+7)	repeat with whatever clusters you want!  Just change them names of files in your commands
+NOTE:	AT THE END, YOU WILL HAVE A BUNCH OF OUTPUT FILES.  LIKE, A LOT.  BEFORE RUNNING ANYMORE TESTS, I WOULD JUST GET RID OF ALL THE OUTPUT FILES YOU DON'T NEED
+
+
+---BASIC STEPS Compute node pinging to Compute node (THIS IS JUST AN EXAMPLE WITH THE INTEL14 CLUSTER)---
+1)	run the pingNode2Nodeintel14.qsub script
+2)	wait for a little bit, it will probably take an hour
+3)	run this command --> python iterateYacron.py "css2csstests.csv" "css csn csp csm" 
+4)	run this command --> histogram.py css2csstests.csv
+5)	using the histogram, analyze the data
+6)	build a list of bad nodes on the intel14 cluster by running this command --> python findBadNodescmd.py "css2csstests.csv" "css2cssBadNodes.txt" "6"
+											*this process is a little weird,  the last input into findBadNodescmd.py
+											will be the number of standard deviations away from the average you choose.
+											this establishes a cutoff point for which nodes are bad
+											IF YOU DON'T WANT TO ENTER A NUMBER THOUGH, THE PROGRAM WILL DEFAULT
+											TO 3 STANDARD DEVIATIONS
+
+7)	repeat with whatever clusters you want!  Just change them names of files in your commands
+NOTE:	AT THE END, YOU WILL HAVE A BUNCH OF OUTPUT FILES.  LIKE, A LOT.  BEFORE RUNNING ANYMORE TESTS, I WOULD JUST GET RID OF ALL THE OUTPUT FILES YOU DON'T NEED
+
+
+
+
+---EXAMPLE CRONTAB---
+
+00 22 * * * cd /mnt/home/tranandr/Documents/CRONCSSTESTS && qsub pingCnode2Devintel14.qsub
+00 23 * * * cd /mnt/home/tranandr/Documents/CRONCSSTESTS && python iterateYacron.py "csstestscron.csv" "css csp csn csm"
+05 23 * * * cd /mnt/home/tranandr/Documents/CRONSCWTESTS && qsub pingCnode2Devintel07.qsub
+05 00 * * * cd /mnt/home/tranandr/Documents/CRONSCWTESTS && python iterateYacron.py "scwtestscron.csv" "scw"
+10 00 * * * cd /mnt/home/tranandr/Documents/CRONNVXTESTS && qsub pingCnode2Devgfx10.qsub
+10 01 * * * cd /mnt/home/tranandr/Documents/CRONNVXTESTS && python iterateYacron.py "nvxtestscron.csv" "nvx"
+15 01 * * * cd /mnt/home/tranandr/Documents/CRONICXTESTS && qsub pingCnode2Devintel10.qsub
+15 02 * * * cd /mnt/home/tranandr/Documents/CRONICXTESTS && python iterateYacron.py "icxtestscron.csv" "icx"
+20 02 * * * cd /mnt/home/tranandr/Documents/CRONIFITESTS && qsub pingCnode2Devintel11.qsub
+20 03 * * * cd /mnt/home/tranandr/Documents/CRONIFITESTS && python iterateYacron.py "ifitestscron.csv" "ifi"
+#ping node to node
+25 03 * * * cd /mnt/home/tranandr/Documents/CRONCSS2CSSTESTS && qsub pingNode2Nodeintel14.qsub
+25 04 * * * cd /mnt/home/tranandr/Documents/CRONCSS2CSSTESTS && python iterateYacron.py "css2csstestscron.csv" "css csp csn csm"
+30 04 * * * cd /mnt/home/tranandr/Documents/CRONSCW2SCWTESTS && qsub pingNode2Nodeintel07.qsub
+30 05 * * * cd /mnt/home/tranandr/Documents/CRONSCW2SCWTESTS && python iterateYacron.py "scw2scwtestscron.csv" "scw"
+35 05 * * * cd /mnt/home/tranandr/Documents/CRONNVX2NVXTESTS && qsub pingNode2Nodegfx10.qsub
+35 06 * * * cd /mnt/home/tranandr/Documents/CRONNVX2NVXTESTS && python iterateYacron.py "nvx2nvxtestscron.csv" "nvx"
+40 06 * * * cd /mnt/home/tranandr/Documents/CRONICX2ICXTESTS && qsub pingNode2Nodeintel10.qsub
+40 07 * * * cd /mnt/home/tranandr/Documents/CRONICX2ICXTESTS && python iterateYacron.py "icx2icxtestscron.csv" "icx"
+45 07 * * * cd /mnt/home/tranandr/Documents/CRONIFI2IFITESTS && qsub pingNode2Nodeintel11.qsub
+45 08 * * * cd /mnt/home/tranandr/Documents/CRONIFI2IFITESTS && python iterateYacron.py "ifi2ifitestscron.csv" "ifi"
+
+NOTE:	I KEEP EVERTHING IN SEPERATE DIRECTORIES BECAUSE I JUST THINK IT'S EASIER
+
+
+
+---HOW TO USE---
+if you want to ping from dev-nodes to dev-nodes
+	ssh to whatever dev-node you want to ping from, and run either pingDev2Dev or pingDev2Devdoti.
+	Results will be stored in either Dev2Devtests.csv or Dev2Devdotitests.csv.  If these .csv files don't
+	exist, they will be created.  If they do exist, the will be appended on.  User can then run findBadNodes.py
+	or betterHistogram.py to analyzed data
+
+if you want to ping from Compute node to dev-node
+	Run one of the several pingCnode2Dev....qsub job scripts.  Wait.  After jobs are all done, run iterateYa.py to
+	compile all your ping data into one .csv file, call it whatever you want.  After, you can analyze your data 
+	by running findBadNodes.py or betterHistogram.py
+	(IT IS BETTER TO DO THIS PROCESS IN AN INDIVIDUAL FOLDER MADE FOR STORING THIS DATA.  THIS PROCESS WILL YIELD 
+	A LOT OF DATA, AND PRODUCE A LOT OF .csv AND .txt FILES)
+
+if you want to ping from Compute node to Compute node
+	Run one of the severage pingNode2Node....qsub job scripts.  Wait.  After jobs are all done, run iterateya.py to
+	compile all your ping data into one .csv file, call it whatever you want.  AFter, you can analyze your data 
+	by running findBadNodes.py or betterHistogram.py 
+	(IT IS BETTER TO DO THIS PROCESS IN AN INDIVIDUAL FOLDER MADE FOR STORING THIS DATA.  THIS PROCESS WILL YIELD 
+	A LOT OF DATA, AND PRODUCE A LOT OF .csv AND .txt FILES)
+
+NOTE:   IF YOU START THE PROCESS OF PINGING COMPUTE NODE TO COMPUTE, AND THEN START THE PROCESS
+	OF PINGING COMPUTE NODE TO DEV-NODE IN THE SAME DIRECTORY, AND YOU USE THE SAME NODE TYPE, RUNNING iterateYa.py 
+	FOR PINGING COMPUTE NODE TO DEV-NODE WILL GATHER ALL THE DATA FROM THE COMPUTE NODE TO COMPUTE NODE PROCESS,
+	AND YOU'LL GET A LOT MORE DATA IN YOUR .csv FILE THAT DOESN'T RELATE 
+
+
+---DESCRIPTION OF PROGRAMS---
+findBadNodes.py
+	program that takes a .csv file of node names and ping times to different nodes.
+	It takes the average of all the ping times, gets the standard deviation,
+	and prompts the user to choose how many standard deviations should be
+	the cut off for marking a bad node.  Program then prints bad nodes,
+	the nodes' averages, the nodes' loads, and the time that the pings were
+	executed
+betterHistogram.py
+	Program that takes a .csv file of node names and ping times to different nodes.
+	From this, a histogram representation is made.  Displays the number of nodes 
+	on the y-axis, and the average ping times in seconds on the x-axis
+	(represents how many nodes had a same average ping time)
+iterateYa.py
+	Program that prompts a user to choose what kind of node they want to build
+	a big .csv file of.  The program then iterates through a directory and 
+	finds .csv files that correspond to the chosen type of node, and builds a big
+	.csv file of all the averages/load information of that chosen type of node.  This is handy
+	when you start having a lot of files of node averages laying around. Usually
+	use this after you've built up a lot of node average data using pingCnode2Dev,
+	pingDev2Dev, or pingDev2Devdoti
+betterParsingCnode2Dev.py
+	Program that will parse through a .txt file created by pingCnode2Dev. 
+	It creates a .csv file of the node average data,
+	marking all the ping times, and also the usage and date. (Used when pinging
+	from Compute node to Dev node in a job (pingCnode2Dev.qsub)
+betterParsingDev2Dev.py 
+	Program that will parse through a .txt file creade by pingDev2Dev or
+	Dev2Devdoti.  It creates a .csv file of the node average data, 
+	marking all the ping times, and also the usage and date.  (Used when pinging
+	from Dev node to Dev node, or Dev node to Dev node dot i.  This has to 
+	be done outside a job, kind of manually, by sshing onto a dev-node and
+	just running the program pingDev2Dev or pingDev2Devdoti
+pingCnode2Dev
+	Shell script that will ping from a node assigned to it from a job script (pingCnode2Dev....qsub)
+	and ping to all the dev nodes 20 times.  The ping information, as well
+	as load information and date and time will be stored in a .txt file that 
+	is in the format (random number)-(source node)with(dev-node).txt.
+	For example, if I pinged from scw-000 to intel07, the file with the
+	information would be stored in something like, 8078-scw-000withintel07.txt
+	This program also uses betterParsingCnode2Dev.py within the script to gather
+	all the pings to dev nodes and put them in a single .csv file.
+	For example, if scw-000 did ping to intel07, it would ping to all the other
+	dev nodes too, creating, like, 5 files or something.  The data in these files
+	would get read by betterParsingCnode2Dev.py within this program and be
+	put into a single .csv file, in the format (random number)-(source)tests.csv
+	In this case it would be 8078-scw-000tests.csv.  The generated random number helps
+	because there will be repeated node pings, and without the random number, the data
+	would get screwed up
+pingDev2Dev
+	Shell script that will ping from a dev node to all the other dev-nodes 20 times.
+	The ping information, as well as load information and date and time will be stored
+	in a .txt file that is in the format (dev-node)with(dev-node).txt.  This program also 
+	uses betterParsingDev2Dev.py within the script to gather all the pings and put them in a
+	single .csv file.  For example, if I pinged from intel07 to the other dev nodes, it would
+	create like, 4 .txt files.  The data in these files would get read by betterParsingDev2Dev.py
+	within this program and be put into a single .csv file, called Dev2Devtests.csv
+pingDev2Devdoti
+	Does the same thing as pingDev2Dev except pings are made to (dev-node).i's
+pingCnode2Dev....qsub
+	Job scripts that will run a big job array and call the shell script pingCnode2Dev.  There
+	are a few of these job scripts, one for each cluster of nodes.
+pingNode2Node....qsub
+	Job scripts that will run a big job array and ping from compute node to compute node in each
+	individual job.   The source node will ping the target node 20 times.  The ping information,
+	as well as load information and date and time will be stored in a .txt file in the format
+	(random number)-(source compute node)with(target compute node).txt.  betterParsingCnode2Dev.py
+	is also called in this program, and will work the same way as it does in the shell script pingCnode2Dev

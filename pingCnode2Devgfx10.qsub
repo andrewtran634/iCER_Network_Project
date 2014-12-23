@@ -1,0 +1,11 @@
+#!/bin/bash --login
+#PBS -l nodes=1:ppn=1,walltime=00:02:10,mem=200mb
+#PBS -l feature=gfx10
+#PBS -j oe
+#PBS -W x=nmatchpolicy:exactnode
+#PBS -t 1-100
+cd ${PBS_O_WORKDIR}
+
+mpirun pingCnode2Dev
+
+qstat -f ${PBS_JOBID}

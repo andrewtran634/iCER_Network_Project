@@ -1,0 +1,28 @@
+#!/bin/bash
+declare -a arr=("intel07" "intel10" "intel14" "gfx10" "intel14-phi" "intel14-k20")
+source=$(hostname)
+type=$RANDOM			#this just acts as a tag, because without it, repeating ping nodes will screw up the data
+for i in "${arr[@]}"
+do
+	ping dev-${i} -c 20 > ${type}-${source}with${i}.txt	#puts ping data in the .txt data file
+	echo DATE AND TIME >> ${type}-${source}with${i}.txt		
+	date >> ${type}-${source}with${i}.txt			#puts date and time in the .txt data file
+	echo PINGER LOAD AVERAGE >> ${type}-${source}with${i}.txt
+	uptime >> ${type}-${source}with${i}.txt			#puts usage info of pinging nodes in the .txt data file
+	
+	echo PINGEE LOAD AVERAGE >> ${type}-${source}with${i}.txt
+	ssh -t dev-${i} uptime >> ${type}-${source}with${i}.txt		#puts usage info of pinged to node in the .txt data file
+
+	echo PINGER-CPUS >> ${type}-${source}with${i}.txt
+	find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${source}with${i}.txt	#puts the number of cores of the pinging node in the .txt data file
+	echo PINGEE-CPUS >> ${type}-${source}with${i}.txt
+	ssh -t dev-${i} find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${source}with${i}.txt #puts the number of cores of the pinged to node in the data file
+	
+done
+
+
+for a in "${arr[@]}"
+do	
+	python betterParsingCnode2Dev.py ${type}-${source}with${a}.txt ${type}-${source}.csv ${source}with${a} 
+		#grabs all the data from the .txt files and puts them into a .csv file
+done

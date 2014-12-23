@@ -1,0 +1,52 @@
+#!/bin/bash --login
+#PBS -l nodes=2:ppn=1,walltime=00:05:00,mem=200mb
+#PBS -l feature=gfx10
+#PBS -j oe
+#PBS -W x=nmatchpolicy:exactnode
+#PBS -t 1-100
+cd ${PBS_O_WORKDIR}
+source=$(hostname)
+
+type=$RANDOM					#random number tag so repeat nodes don't screw up data
+filename=${PBS_NODEFILE}
+pingTo=$(grep -v -e ${source} ${PBS_NODEFILE})
+
+ping ${pingTo}.i -c 20 > ${type}-${source}with${pingTo}.txt	#puts ping data in the .txt data file
+echo DATE AND TIME >> ${type}-${source}with${pingTo}.txt
+date >> ${type}-${source}with${pingTo}.txt			#puts date and time in the .txt data file
+
+echo PINGER LOAD AVERAGE >> ${type}-${source}with${pingTo}.txt
+uptime >> ${type}-${source}with${pingTo}.txt			#puts usage info of pinging nodes in the .txt data file
+echo PINGEE LOAD AVERAGE >> ${type}-${source}with${pingTo}.txt
+ssh -t ${pingTo} uptime >> ${type}-${source}with${pingTo}.txt	#puts usage info of pinged to node in the .txt data file
+
+echo PINGER-CPUS >> ${type}-${source}with${pingTo}.txt
+find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${source}with${pingTo}.txt		#puts the number of cores of the pinging node in the .txt data file
+echo PINGEE-CPUS >> ${type}-${source}with${pingTo}.txt
+ssh -t ${pingTo} find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${source}with${pingTo}.txt    #puts the number of cores of the pinged to node in the data file
+
+
+python betterParsingCnode2Dev.py ${type}-${source}with${pingTo}.txt ${type}-${source}with${pingTo}.csv ${source}with${pingTo}
+
+
+#OTHER SIDE
+#DOES THE REVERSE, TAKES THE PINGED TO NODE AND DOES THE SAME PROCESS TO THE ORIGINAL SOURCE NODE
+
+
+ssh -t ${pingTo} ping ${source}.i -c 20 > ${type}-${pingTo}with${source}.txt
+echo DATE AND TIME >> ${type}-${pingTo}with${source}.txt
+date >> ${type}-${pingTo}with${source}.txt
+echo PINGER LOAD AVERAGE >> ${type}-${pingTo}with${source}.txt
+ssh -t ${pingTo} uptime >> ${type}-${pingTo}with${source}.txt
+echo PINGEE LOAD AVERAGE >> ${type}-${pingTo}with${source}.txt
+uptime >> ${type}-${pingTo}with${source}.txt
+
+echo PINGER-CPUS >> ${type}-${pingTo}with${source}.txt
+ssh -t ${pingTo} find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${pingTo}with${source}.txt
+echo PINGEE-CPUS >> ${type}-${pingTo}with${source}.txt
+find /dev/cpu/ -maxdepth 1 -type d |wc -l >> ${type}-${pingTo}with${source}.txt
+
+python betterParsingCnode2Dev.py ${type}-${pingTo}with${source}.txt ${type}-${pingTo}with${source}.csv ${pingTo}with${source}
+
+
+qstat -f ${PBS_JOBID}
